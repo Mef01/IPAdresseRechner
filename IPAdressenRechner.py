@@ -1,3 +1,14 @@
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def Input_Loop(Amsg: str, Ais_subnet: bool):
 
     def Wrong_Input():
@@ -103,6 +114,11 @@ def Invert_Subnet_Mask(Asubnet_mask_binary: str):
     host_section_new = Extract_Subnet_Bits(Asubnet_mask_binary, 'network').replace('1', '0')
     return host_section_new + network_section_new
 
+def Get_Colored_Subnet(Asubnet_mask_binary: str):
+    network_section = '\033[0;37;45m' + Extract_Subnet_Bits(Asubnet_mask_binary, 'network')
+    host_section = '\033[0;37;41m' + Extract_Subnet_Bits(Asubnet_mask_binary, 'host')
+    return host_section + network_section
+
 def Build_Broadcast_Address(AIP_address_binary: str, Asubnet_mask_binary_inverted: str):
     #Wendet das OR Verfahren auf die IP und Subnet Addresse (invertiert) an um die Broadcast Addresse zu ermitteln.
     #Falls eine oder beide Ziffern auf einer Stelle eine 1 sind, wird auch eine 1 bei der Broadcast address hinzugefügt. Sonst eine 0.
@@ -134,15 +150,15 @@ subnet_mask_IPv4 = Input_Loop('Geben sie bitte eine Subnetz Maske ein: ', True)
 
 IP_address_binary = IPv4_to_Binary(IP_address_IPv4)
 print('\nIP Addresse binär: ' + IP_address_binary)
-subnet_mask_binary = IPv4_to_Binary(subnet_mask_IPv4)
-print('Subnetz Maske binär: ' + subnet_mask_binary)
+subnet_mask_binary = IPv4_to_Binary(subnet_mask_IPv4) #asdwasd
+print('Subnetz Maske binär: ' + f"{bcolors.OKBLUE}" + Extract_Subnet_Bits(subnet_mask_binary, 'network') + f'{bcolors.ENDC}' + Extract_Subnet_Bits(subnet_mask_binary, 'host'))
 
 print('\nHost Bits extrahieren...\n2 mit Anzahl der Host Bits potenzieren...\nBroad- und Netz-Addresse abziehen...')
 IP_count = Get_IP_Count(subnet_mask_binary)
 print('Anzahl verfügbarer IP Adressen: ' + str(IP_count))
 
 print('\nSubnetz Maske invertieren...')
-subnet_mask_binary_inverted = Invert_Subnet_Mask(subnet_mask_binary)
+subnet_mask_binary_inverted = Invert_Subnet_Mask(subnet_mask_binary) #asdwas
 print('Subnetz Maske invertiert: ' + subnet_mask_binary_inverted)
 
 print('\nInvertierte Subnetz Maske und IP Addresse mit logischem OR verknüpfen...')
