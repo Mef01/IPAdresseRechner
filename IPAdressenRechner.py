@@ -151,7 +151,7 @@ subnet_mask_IPv4 = Input_Loop('Geben sie bitte eine Subnetz Maske ein: ', True)
 IP_address_binary = IPv4_to_Binary(IP_address_IPv4)
 print('\nIP Addresse binär: ' + IP_address_binary)
 subnet_mask_binary = IPv4_to_Binary(subnet_mask_IPv4) #asdwasd
-print('Subnetz Maske binär: ' + f"{bcolors.OKBLUE}" + Extract_Subnet_Bits(subnet_mask_binary, 'network') + f'{bcolors.ENDC}' + Extract_Subnet_Bits(subnet_mask_binary, 'host'))
+print('Subnetz Maske binär: ' + f"{bcolors.WARNING}" + Extract_Subnet_Bits(subnet_mask_binary, 'network') + f'{bcolors.OKCYAN}' + Extract_Subnet_Bits(subnet_mask_binary, 'host') + f'{bcolors.ENDC}')
 
 print('\nHost Bits extrahieren...\n2 mit Anzahl der Host Bits potenzieren...\nBroad- und Netz-Addresse abziehen...')
 IP_count = Get_IP_Count(subnet_mask_binary)
