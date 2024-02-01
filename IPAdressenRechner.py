@@ -1,13 +1,10 @@
 class bcolors:
-    HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
     ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 def Input_Loop(Amsg: str, Ais_subnet: bool):
 
@@ -33,8 +30,8 @@ def Input_Loop(Amsg: str, Ais_subnet: bool):
         #Überprüft spezifisch die Subnetmaske darauf, ob es sich um eine Folge von Nullen auf Einsen handelt.
         #Bei einem Fehler wird einfach -1 zurückgegeben, sonst die IPv4.
         subnet_mask_binary = IPv4_to_Binary(Asubnet_mask_IPv4)
-        host_bits = Extract_Subnet_Bits(subnet_mask_binary, 'host')
-        network_bits = Extract_Subnet_Bits(subnet_mask_binary, 'network')
+        host_bits = Extract_Subnet_Bits(subnet_mask_binary, 'host', False)
+        network_bits = Extract_Subnet_Bits(subnet_mask_binary, 'network', False)
         if '0' in network_bits or '1' in host_bits:
             return -1
         return subnet_mask_binary
@@ -90,34 +87,40 @@ def Binary_to_IPv4(Abinary: str):
         result = result + str(Calc_Decimal(binary_split[i])) + '.'
     return result[:-1]
 
-def Extract_Subnet_Bits(Asubnet_mask_binary: str, Ahost_or_network: str):
+def Extract_Subnet_Bits(Asubnet_mask_binary: str, Ahost_or_network: str, Ainverted: bool):
     #Extrahiert entweder die Host- oder Netzwerk-Bits aus einer Subnet Maske
-    pos_zero = Asubnet_mask_binary.find('0')
-    if Ahost_or_network == 'host':
+    
+    if not Ainverted:
+        pos_zero = Asubnet_mask_binary.find('0')
+        if Ahost_or_network == 'host':
+            return Asubnet_mask_binary[pos_zero:]
+        return Asubnet_mask_binary[:pos_zero]
+    else:
+        pos_zero = Asubnet_mask_binary.find('1')
+        if Ahost_or_network == 'host':
+            return Asubnet_mask_binary[:pos_zero]
         return Asubnet_mask_binary[pos_zero:]
-    return Asubnet_mask_binary[:pos_zero]
+        
 
 def Get_Bit_Count(ABits: str):
     #streicht die Punkte und zählt dann die länge
     bits = ABits.replace('.', '')
     return len(bits)
 
-def Get_IP_Count(Asubnet_mask_binary: str):
+def Get_IP_Count(Asubnet_mask_binary: str,  Ahost_addresses: bool):
     #Zählt die Host-bits und nutzt sie als Potenz für die Zahl 2. Am Ende werden 2 für die Broadcast- und Network address abgezogen.
-    host_bits = Extract_Subnet_Bits(Asubnet_mask_binary, 'host')
+    host_bits = Extract_Subnet_Bits(Asubnet_mask_binary, 'host', False)
     host_bits = Get_Bit_Count(host_bits)
-    return pow(2, host_bits) - 2
+    if Ahost_addresses:
+        return pow(2, host_bits)
+    else:
+        return pow(2, host_bits) - 2
 
 def Invert_Subnet_Mask(Asubnet_mask_binary: str):
     #Invertiert die Subnetz Maske
-    network_section_new = Extract_Subnet_Bits(Asubnet_mask_binary, 'host').replace('0', '1')
-    host_section_new = Extract_Subnet_Bits(Asubnet_mask_binary, 'network').replace('1', '0')
+    network_section_new = Extract_Subnet_Bits(Asubnet_mask_binary, 'host', False).replace('0', '1')
+    host_section_new = Extract_Subnet_Bits(Asubnet_mask_binary, 'network', False).replace('1', '0')
     return host_section_new + network_section_new
-
-def Get_Colored_Subnet(Asubnet_mask_binary: str):
-    network_section = '\033[0;37;45m' + Extract_Subnet_Bits(Asubnet_mask_binary, 'network')
-    host_section = '\033[0;37;41m' + Extract_Subnet_Bits(Asubnet_mask_binary, 'host')
-    return host_section + network_section
 
 def Build_Broadcast_Address(AIP_address_binary: str, Asubnet_mask_binary_inverted: str):
     #Wendet das OR Verfahren auf die IP und Subnet Addresse (invertiert) an um die Broadcast Addresse zu ermitteln.
@@ -150,41 +153,48 @@ subnet_mask_IPv4 = Input_Loop('Geben sie bitte eine Subnetz Maske ein: ', True)
 
 IP_address_binary = IPv4_to_Binary(IP_address_IPv4)
 print('\nIP Addresse binär: ' + IP_address_binary)
-subnet_mask_binary = IPv4_to_Binary(subnet_mask_IPv4) #asdwasd
-print('Subnetz Maske binär: ' + f"{bcolors.WARNING}" + Extract_Subnet_Bits(subnet_mask_binary, 'network') + f'{bcolors.OKCYAN}' + Extract_Subnet_Bits(subnet_mask_binary, 'host') + f'{bcolors.ENDC}')
+subnet_mask_binary = IPv4_to_Binary(subnet_mask_IPv4)
+print('Subnetz Maske binär: ' + f'{bcolors.RED}' + Extract_Subnet_Bits(subnet_mask_binary, 'network', False) + f'{bcolors.OKCYAN}' + Extract_Subnet_Bits(subnet_mask_binary, 'host', False) + f'{bcolors.ENDC}')
 
-print('\nHost Bits extrahieren...\n2 mit Anzahl der Host Bits potenzieren...\nBroad- und Netz-Addresse abziehen...')
-IP_count = Get_IP_Count(subnet_mask_binary)
-print('Anzahl verfügbarer IP Adressen: ' + str(IP_count))
+print('\nHost Bits extrahieren...\n2 mit Anzahl der Host Bits potenzieren...')
+IP_count = Get_IP_Count(subnet_mask_binary, True)
+print('Anzahl verfügbarer IP-Addressen: ' + str(IP_count))
+print('\nBroad- und Netz-Addresse abziehen...')
+IP_count_hosts = Get_IP_Count(subnet_mask_binary, False)
+print('Anzahl davon abhängiger Host-Addressen: ' + str(IP_count_hosts))
 
 print('\nSubnetz Maske invertieren...')
-subnet_mask_binary_inverted = Invert_Subnet_Mask(subnet_mask_binary) #asdwas
-print('Subnetz Maske invertiert: ' + subnet_mask_binary_inverted)
+subnet_mask_binary_inverted = Invert_Subnet_Mask(subnet_mask_binary) 
+print('Subnetz Maske invertiert: ' + f'{bcolors.OKCYAN}' + Extract_Subnet_Bits(subnet_mask_binary_inverted, 'host', True) + f'{bcolors.RED}' + Extract_Subnet_Bits(subnet_mask_binary_inverted, 'network', True) + f'{bcolors.ENDC}')  
 
 print('\nInvertierte Subnetz Maske und IP Addresse mit logischem OR verknüpfen...')
+print('Binäre IP Addresse:               ' + IP_address_binary)
+print('Binäre invertierte Subnetz Maske: ' + f'{bcolors.OKCYAN}' + Extract_Subnet_Bits(subnet_mask_binary_inverted, 'host', True) + f'{bcolors.RED}' + Extract_Subnet_Bits(subnet_mask_binary_inverted, 'network', True) + f'{bcolors.ENDC}')
 broadcast_address_binary = Build_Broadcast_Address(IP_address_binary, subnet_mask_binary_inverted)
-print('Broadcast Addresse binär: ' + broadcast_address_binary)
-print('Binäre Broadcast Addresse in IPv4 umwandeln...')
+print('Broadcast Addresse binär:         ' + broadcast_address_binary)
+print('Binäre Broadcast Addresse in dezimal umwandeln...')
 broadcast_address_IPv4 = Binary_to_IPv4(broadcast_address_binary)
-print('Broadcast Addresse IPv4: ' + broadcast_address_IPv4)
+print('Broadcast Addresse dezimal: ' + broadcast_address_IPv4)
 
 print('\nSubnetz Maske und IP Addresse mit logischem AND verknüpfen...')
+print('Binäre IP Addresse:      ' + IP_address_binary)
+print('Binäre Subnetz Maske:    ' + f'{bcolors.RED}' + Extract_Subnet_Bits(subnet_mask_binary, 'network', False) + f'{bcolors.OKCYAN}' + Extract_Subnet_Bits(subnet_mask_binary, 'host', False) + f'{bcolors.ENDC}')
 network_address_binary = Build_Network_Address(IP_address_binary, subnet_mask_binary)
 print('Netzwerk Addresse binär: ' + network_address_binary)
-print('Binäre Netzwerk Addresse in IPv4 umwandeln...')
+print('Binäre Netzwerk Addresse in dezimal umwandeln...')
 network_address_IPv4 = Binary_to_IPv4(network_address_binary) 
-print('Netzwerk Addresse IPv4: ' + network_address_IPv4)
+print('Netzwerk Addresse dezimal: ' + network_address_IPv4)
 
 print('\nEinsen an Subnetz Maske ablesen --> Netzwerkbits...')
-network_mask_CIDR = '/' + str(Get_Bit_Count(Extract_Subnet_Bits(subnet_mask_binary, 'network')))
+network_mask_CIDR = '/' + str(Get_Bit_Count(Extract_Subnet_Bits(subnet_mask_binary, 'network', False)))
 print('Netzmaske in CIDR Notation: ' + network_mask_CIDR)
 
 print('\nEinsen an Subnetz Maske ablesen...')
-network_bits_count = str(Get_Bit_Count(Extract_Subnet_Bits(subnet_mask_binary, 'network')))
+network_bits_count = str(Get_Bit_Count(Extract_Subnet_Bits(subnet_mask_binary, 'network', False)))
 print('Anzahl der Netzwerk Bits: ' + network_bits_count)
 
 print('\nNullen an Subnetz Maske ablesen...')
-host_bits_count = str(Get_Bit_Count(Extract_Subnet_Bits(subnet_mask_binary, 'host')))
+host_bits_count = str(Get_Bit_Count(Extract_Subnet_Bits(subnet_mask_binary, 'host', False)))
 print('Anzahl der Host Bits: ' + host_bits_count)
 
 
